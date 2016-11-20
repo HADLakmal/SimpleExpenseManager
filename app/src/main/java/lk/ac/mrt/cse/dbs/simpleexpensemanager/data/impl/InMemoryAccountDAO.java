@@ -31,26 +31,31 @@ import lk.ac.mrt.cse.dbs.simpleexpensemanager.data.model.ExpenseType;
  * used to store the account details temporarily in the memory.
  */
 public class InMemoryAccountDAO implements AccountDAO {
-    private final Map<String, Account> accounts;
+    private final DBHandler db;
 
-    public InMemoryAccountDAO() {
-        this.accounts = new HashMap<>();
+    public InMemoryAccountDAO(Context activity) {
+        db = new DBHandler(activity);
     }
 
     @Override
     public List<String> getAccountNumbersList() {
-        return new ArrayList<>(accounts.keySet());
+        List<Account> allAccount = db.getAllAccount();
+        ArrayList res = new ArrayList();
+        for (Account a: allAccount) {
+            res.add(a.getAccountNo());
+        }
+        return res;
     }
 
     @Override
     public List<Account> getAccountsList() {
-        return new ArrayList<>(accounts.values());
+        return db.getAllAccount();
     }
 
     @Override
     public Account getAccount(String accountNo) throws InvalidAccountException {
-        if (accounts.containsKey(accountNo)) {
-            return accounts.get(accountNo);
+        if (db.hasAccountNo(accountNo)) {
+            return db.getAccounts(accountNo);
         }
         String msg = "Account " + accountNo + " is invalid.";
         throw new InvalidAccountException(msg);
@@ -58,34 +63,39 @@ public class InMemoryAccountDAO implements AccountDAO {
 
     @Override
     public void addAccount(Account account) {
-        accounts.put(account.getAccountNo(), account);
+        Log.d("Logging", "addAccount Method");
+        db.addAccount(account.getAccountNo(),
+                account.getBankName(),
+                account.getAccountHolderName(),
+                account.getBalance());
+
     }
 
     @Override
     public void removeAccount(String accountNo) throws InvalidAccountException {
-        if (!accounts.containsKey(accountNo)) {
+        if (db.hasAccountNo(accountNo)){
+            db.removeAccount(accountNo);
+        }else{
             String msg = "Account " + accountNo + " is invalid.";
             throw new InvalidAccountException(msg);
         }
-        accounts.remove(accountNo);
     }
 
     @Override
     public void updateBalance(String accountNo, ExpenseType expenseType, double amount) throws InvalidAccountException {
-        if (!accounts.containsKey(accountNo)) {
+        if (!db.hasAccountNo(accountNo)) {
             String msg = "Account " + accountNo + " is invalid.";
             throw new InvalidAccountException(msg);
         }
-        Account account = accounts.get(accountNo);
+        Account account = db.getAccounts(accountNo);
         // specific implementation based on the transaction type
         switch (expenseType) {
             case EXPENSE:
-                account.setBalance(account.getBalance() - amount);
+                db.updateBalance(accountNo, -1 * amount);
                 break;
             case INCOME:
-                account.setBalance(account.getBalance() + amount);
+                db.updateBalance(accountNo, amount);
                 break;
         }
-        accounts.put(accountNo, account);
     }
 }
