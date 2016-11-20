@@ -29,31 +29,33 @@ import lk.ac.mrt.cse.dbs.simpleexpensemanager.data.model.Transaction;
  * transaction logs are stored in a LinkedList in memory.
  */
 public class InMemoryTransactionDAO implements TransactionDAO {
-    private final List<Transaction> transactions;
 
-    public InMemoryTransactionDAO() {
-        transactions = new LinkedList<>();
+    private final DBHandler db;
+
+    public InMemoryTransactionDAO(Context activity) {
+
+        db = new DBHandler(activity);
     }
 
     @Override
     public void logTransaction(Date date, String accountNo, ExpenseType expenseType, double amount) {
-        Transaction transaction = new Transaction(date, accountNo, expenseType, amount);
-        transactions.add(transaction);
+        db.addTransaction(accountNo, date, expenseType, amount);
     }
 
     @Override
     public List<Transaction> getAllTransactionLogs() {
-        return transactions;
+        return db.getAllTransactions();
     }
 
     @Override
     public List<Transaction> getPaginatedTransactionLogs(int limit) {
+        List<Transaction> transactions = db.getAllTransactions();
         int size = transactions.size();
         if (size <= limit) {
             return transactions;
         }
-        // return the last <code>limit</code> number of transaction logs
         return transactions.subList(size - limit, size);
     }
+
 
 }
